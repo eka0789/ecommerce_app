@@ -13,37 +13,43 @@ class CategoryFilter extends StatelessWidget {
       height: 50,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          ChoiceChip(
-            label: const Text('All'),
-            selected: productProvider.products.isNotEmpty &&
-                productProvider.categories.isNotEmpty &&
-                productProvider.products.every(
-                    (product) => productProvider.categories.any((category) => category.name == product.category)),
-            onSelected: (selected) {
-              if (selected) {
-                productProvider.fetchProducts();
-              }
-            },
-          ),
-          const SizedBox(width: 8),
-          ...productProvider.categories.map((category) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(category.name),
-                selected: productProvider.products.isNotEmpty &&
-                    productProvider.products.every((product) => product.category == category.name),
-                onSelected: (selected) {
-                  if (selected) {
-                    productProvider.fetchProductsByCategory(category.name);
-                  }
-                },
-              ),
-            );
-          }).toList(),
+          _buildCategoryChip(context, 'All', productProvider, true),
+          ...productProvider.categories.map((category) =>
+              _buildCategoryChip(context, category.name, productProvider, false)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(
+      BuildContext context, String label, ProductProvider provider, bool isAll) {
+    final isSelected = isAll
+        ? provider.products.isNotEmpty &&
+            provider.categories.isNotEmpty &&
+            provider.products.every((product) =>
+                provider.categories.any((category) => category.name == product.category))
+        : provider.products.isNotEmpty &&
+            provider.products.every((product) => product.category == label);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isSelected ? 1.0 : 0.6,
+        child: ChoiceChip(
+          label: Text(label),
+          selected: isSelected,
+          onSelected: (selected) {
+            if (selected) {
+              if (isAll) {
+                provider.fetchProducts();
+              } else {
+                provider.fetchProductsByCategory(label);
+              }
+            }
+          },
+        ),
       ),
     );
   }

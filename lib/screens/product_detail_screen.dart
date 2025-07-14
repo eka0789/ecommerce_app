@@ -73,6 +73,16 @@ class ProductDetailScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < product.rating.floor() ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 20,
+                      );
+                    }),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Category: ${product.category}',

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cart.dart';
 import '../models/product.dart';
 
@@ -6,6 +8,10 @@ class CartProvider with ChangeNotifier {
   List<Cart> _cartItems = [];
 
   List<Cart> get cartItems => _cartItems;
+
+  CartProvider() {
+    _loadCart();
+  }
 
   void addToCart(Product product) {
     final existingItem = _cartItems.firstWhere(
@@ -17,11 +23,13 @@ class CartProvider with ChangeNotifier {
     } else {
       existingItem.quantity++;
     }
+    _saveCart();
     notifyListeners();
   }
 
   void removeFromCart(int productId) {
     _cartItems.removeWhere((item) => item.product.id == productId);
+    _saveCart();
     notifyListeners();
   }
 
@@ -32,6 +40,7 @@ class CartProvider with ChangeNotifier {
     } else {
       _cartItems.remove(item);
     }
+    _saveCart();
     notifyListeners();
   }
 
@@ -41,10 +50,36 @@ class CartProvider with ChangeNotifier {
   }
 
   Future<bool> processPayment() async {
-    // Simulate payment processing with a 2-second delay
     await Future.delayed(const Duration(seconds: 2));
     _cartItems.clear();
+    await _saveCart();
     notifyListeners();
     return true;
+  }
+
+  Future<void> _saveCart() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = _cartItems
+        .map((item) => {
+              'product': item.product.toJson(),
+              'quantity': item.quantity,
+            })
+        .toList();
+    await prefs.setString('cart', json.encode(cartJson));
+  }
+
+  Future<void> _loadCart() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartJson = prefs.getString('cart');
+    if (cartJson != null) {
+      final List<dynamic> decoded = json.decode(cartJson);
+      _cartItems = decoded
+          .map((json) => Cart(
+                product: Product.fromJson(json['product']),
+                quantity: json['quantity'],
+              ))
+          .toList();
+      notifyListeners();
+    }
   }
 }
