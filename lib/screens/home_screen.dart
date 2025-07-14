@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/wishlist_provider.dart';
 import '../screens/cart_screen.dart';
 import '../screens/search_screen.dart';
+import '../screens/wishlist_screen.dart';
 import '../widgets/product_card.dart';
 import '../widgets/category_filter.dart';
 
@@ -14,10 +16,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
+    final wishlistProvider = Provider.of<WishlistProvider>(context);
 
     // Fetch products and categories on initial load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (productProvider.products.isEmpty) {
+      if (productProvider.products.isEmpty && !productProvider.isLoading) {
         productProvider.fetchProducts();
         productProvider.fetchCategories();
       }
@@ -33,6 +36,32 @@ class HomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: Stack(
+              children: [
+                const Icon(Icons.favorite_border),
+                if (wishlistProvider.wishlistItems.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: CircleAvatar(
+                      radius: 8,
+                      backgroundColor: Colors.red,
+                      child: Text(
+                        '${wishlistProvider.wishlistItems.length}',
+                        style: const TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const WishlistScreen()),
               );
             },
           ),
@@ -66,7 +95,34 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          const CategoryFilter(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: CategoryFilter(),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                DropdownButton<String>(
+                  value: productProvider.sortOption,
+                  items: const [
+                    DropdownMenuItem(value: 'none', child: Text('Sort: Default')),
+                    DropdownMenuItem(value: 'priceLowToHigh', child: Text('Price: Low to High')),
+                    DropdownMenuItem(value: 'priceHighToLow', child: Text('Price: High to Low')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      productProvider.setSortOption(value);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: productProvider.isLoading
                 ? const Center(child: CircularProgressIndicator())

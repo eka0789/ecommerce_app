@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
+import '../providers/wishlist_provider.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -10,12 +11,37 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final wishlistProvider = Provider.of<WishlistProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           product.title.length > 20 ? '${product.title.substring(0, 20)}...' : product.title,
           style: const TextStyle(fontSize: 18),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              wishlistProvider.isInWishlist(product.id)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              color: wishlistProvider.isInWishlist(product.id) ? Colors.red : null,
+            ),
+            onPressed: () {
+              if (wishlistProvider.isInWishlist(product.id)) {
+                wishlistProvider.removeFromWishlist(product.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${product.title} removed from wishlist')),
+                );
+              } else {
+                wishlistProvider.addToWishlist(product);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${product.title} added to wishlist')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

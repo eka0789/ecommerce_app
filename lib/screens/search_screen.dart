@@ -48,6 +48,21 @@ class _SearchScreenState extends State<SearchScreen> {
             });
           },
         ),
+        actions: [
+          DropdownButton<String>(
+            value: productProvider.sortOption,
+            items: const [
+              DropdownMenuItem(value: 'none', child: Text('Sort: Default')),
+              DropdownMenuItem(value: 'priceLowToHigh', child: Text('Price: Low to High')),
+              DropdownMenuItem(value: 'priceHighToLow', child: Text('Price: High to Low')),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                productProvider.setSortOption(value);
+              }
+            },
+          ),
+        ],
       ),
       body: filteredProducts.isEmpty && _query.isNotEmpty
           ? const Center(child: Text('No products found'))

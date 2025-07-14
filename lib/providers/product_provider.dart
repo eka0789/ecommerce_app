@@ -7,10 +7,21 @@ class ProductProvider with ChangeNotifier {
   List<Product> _products = [];
   List<Category> _categories = [];
   bool _isLoading = false;
+  String _sortOption = 'none';
 
-  List<Product> get products => _products;
+  List<Product> get products {
+    List<Product> sortedProducts = List.from(_products);
+    if (_sortOption == 'priceLowToHigh') {
+      sortedProducts.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sortOption == 'priceHighToLow') {
+      sortedProducts.sort((a, b) => b.price.compareTo(a.price));
+    }
+    return sortedProducts;
+  }
+
   List<Category> get categories => _categories;
   bool get isLoading => _isLoading;
+  String get sortOption => _sortOption;
 
   final ApiService _apiService = ApiService();
 
@@ -52,9 +63,20 @@ class ProductProvider with ChangeNotifier {
   }
 
   List<Product> searchProducts(String query) {
-    return _products
+    List<Product> filteredProducts = _products
         .where((product) =>
             product.title.toLowerCase().contains(query.toLowerCase()))
         .toList();
+    if (_sortOption == 'priceLowToHigh') {
+      filteredProducts.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sortOption == 'priceHighToLow') {
+      filteredProducts.sort((a, b) => b.price.compareTo(a.price));
+    }
+    return filteredProducts;
+  }
+
+  void setSortOption(String option) {
+    _sortOption = option;
+    notifyListeners();
   }
 }
