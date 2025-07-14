@@ -62,6 +62,15 @@ class _SearchScreenState extends State<SearchScreen> {
               }
             },
           ),
+          IconButton(
+            icon: Icon(
+              productProvider.filterHighRating ? Icons.star : Icons.star_border,
+              color: productProvider.filterHighRating ? Colors.amber : null,
+            ),
+            onPressed: () {
+              productProvider.toggleHighRatingFilter(!productProvider.filterHighRating);
+            },
+          ),
         ],
       ),
       body: filteredProducts.isEmpty && _query.isNotEmpty

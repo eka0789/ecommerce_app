@@ -18,7 +18,6 @@ class HomeScreen extends StatelessWidget {
     final cartProvider = Provider.of<CartProvider>(context);
     final wishlistProvider = Provider.of<WishlistProvider>(context);
 
-    // Fetch products and categories on initial load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (productProvider.products.isEmpty && !productProvider.isLoading) {
         productProvider.fetchProducts();
@@ -107,18 +106,34 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                DropdownButton<String>(
-                  value: productProvider.sortOption,
-                  items: const [
-                    DropdownMenuItem(value: 'none', child: Text('Sort: Default')),
-                    DropdownMenuItem(value: 'priceLowToHigh', child: Text('Price: Low to High')),
-                    DropdownMenuItem(value: 'priceHighToLow', child: Text('Price: High to Low')),
+                Row(
+                  children: [
+                    DropdownButton<String>(
+                      value: productProvider.sortOption,
+                      items: const [
+                        DropdownMenuItem(value: 'none', child: Text('Sort: Default')),
+                        DropdownMenuItem(value: 'priceLowToHigh', child: Text('Price: Low to High')),
+                        DropdownMenuItem(value: 'priceHighToLow', child: Text('Price: High to Low')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          productProvider.setSortOption(value);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(
+                        productProvider.filterHighRating
+                            ? Icons.star
+                            : Icons.star_border,
+                        color: productProvider.filterHighRating ? Colors.amber : null,
+                      ),
+                      onPressed: () {
+                        productProvider.toggleHighRatingFilter(!productProvider.filterHighRating);
+                      },
+                    ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      productProvider.setSortOption(value);
-                    }
-                  },
                 ),
               ],
             ),

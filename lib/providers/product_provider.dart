@@ -10,20 +10,24 @@ class ProductProvider with ChangeNotifier {
   List<Category> _categories = [];
   bool _isLoading = false;
   String _sortOption = 'none';
+  bool _filterHighRating = false;
 
   List<Product> get products {
-    List<Product> sortedProducts = List.from(_products);
+    List<Product> filteredProducts = _filterHighRating
+        ? _products.where((product) => product.rating >= 4.0).toList()
+        : List.from(_products);
     if (_sortOption == 'priceLowToHigh') {
-      sortedProducts.sort((a, b) => a.price.compareTo(b.price));
+      filteredProducts.sort((a, b) => a.price.compareTo(b.price));
     } else if (_sortOption == 'priceHighToLow') {
-      sortedProducts.sort((a, b) => b.price.compareTo(a.price));
+      filteredProducts.sort((a, b) => b.price.compareTo(a.price));
     }
-    return sortedProducts;
+    return filteredProducts;
   }
 
   List<Category> get categories => _categories;
   bool get isLoading => _isLoading;
   String get sortOption => _sortOption;
+  bool get filterHighRating => _filterHighRating;
 
   final ApiService _apiService = ApiService();
 
@@ -73,7 +77,8 @@ class ProductProvider with ChangeNotifier {
   List<Product> searchProducts(String query) {
     List<Product> filteredProducts = _products
         .where((product) =>
-            product.title.toLowerCase().contains(query.toLowerCase()))
+            product.title.toLowerCase().contains(query.toLowerCase()) &&
+            (!_filterHighRating || product.rating >= 4.0))
         .toList();
     if (_sortOption == 'priceLowToHigh') {
       filteredProducts.sort((a, b) => a.price.compareTo(b.price));
@@ -85,6 +90,11 @@ class ProductProvider with ChangeNotifier {
 
   void setSortOption(String option) {
     _sortOption = option;
+    notifyListeners();
+  }
+
+  void toggleHighRatingFilter(bool value) {
+    _filterHighRating = value;
     notifyListeners();
   }
 

@@ -4,42 +4,87 @@ import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../providers/wishlist_provider.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailScreen({super.key, required this.product});
 
   @override
+  _ProductDetailScreenState createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.bounceOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _animateAndAddToCart(CartProvider cartProvider) {
+    _controller.forward().then((_) {
+      _controller.reverse();
+      cartProvider.addToCart(widget.product);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${widget.product.title} added to cart')),
+      );
+    });
+  }
+
+  void _animateAndToggleWishlist(WishlistProvider wishlistProvider) {
+    _controller.forward().then((_) {
+      _controller.reverse();
+      if (wishlistProvider.isInWishlist(widget.product.id)) {
+        wishlistProvider.removeFromWishlist(widget.product.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${widget.product.title} removed from wishlist')),
+        );
+      } else {
+        wishlistProvider.addToWishlist(widget.product);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${widget.product.title} added to wishlist')),
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final wishlistProvider = Provider.of<WishlistProvider>(context);
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          product.title.length > 20 ? '${product.title.substring(0, 20)}...' : product.title,
+          widget.product.title.length > 20 ? '${widget.product.title.substring(0, 20)}...' : widget.product.title,
           style: const TextStyle(fontSize: 18),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              wishlistProvider.isInWishlist(product.id)
-                  ? Icons.favorite
-                  : Icons.favorite_border,
-              color: wishlistProvider.isInWishlist(product.id) ? Colors.red : null,
+          ScaleTransition(
+            scale: _scaleAnimation,
+            child: IconButton(
+              icon: Icon(
+                wishlistProvider.isInWishlist(widget.product.id)
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: wishlistProvider.isInWishlist(widget.product.id) ? Colors.red : null,
+              ),
+              onPressed: () => _animateAndToggleWishlist(wishlistProvider),
             ),
-            onPressed: () {
-              if (wishlistProvider.isInWishlist(product.id)) {
-                wishlistProvider.removeFromWishlist(product.id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${product.title} removed from wishlist')),
-                );
-              } else {
-                wishlistProvider.addToWishlist(product);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${product.title} added to wishlist')),
-                );
-              }
-            },
           ),
         ],
       ),
@@ -48,7 +93,7 @@ class ProductDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Image.network(
-              product.image,
+              widget.product.image,
               height: 300,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -60,14 +105,14 @@ class ProductDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.title,
+                    widget.product.title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '\$${product.price.toStringAsFixed(2)}',
+                    '\$${widget.product.price.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -77,37 +122,79 @@ class ProductDetailScreen extends StatelessWidget {
                   Row(
                     children: List.generate(5, (index) {
                       return Icon(
-                        index < product.rating.floor() ? Icons.star : Icons.star_border,
+                        index < widget.product.rating.floor() ? Icons.star : Icons.star_border,
                         color: Colors.amber,
                         size: 20,
                       );
                     }),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${widget.product.reviewCount} reviews',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 16),
                   Text(
-                    'Category: ${product.category}',
+                    'Category: ${widget.product.category}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    product.description,
+                    widget.product.description,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      Provider.of<CartProvider>(context, listen: false).addToCart(product);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${product.title} added to cart')),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Customer Reviews',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Based on ${widget.product.reviewCount} reviews',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          ListView(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: const [
+                              ListTile(
+                                title: Text('Great product!'),
+                                subtitle: Text('Really satisfied with the quality.'),
+                                leading: Icon(Icons.person),
+                              ),
+                              ListTile(
+                                title: Text('Highly recommend'),
+                                subtitle: Text('Worth the price.'),
+                                leading: Icon(Icons.person),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    child: const Text('Add to Cart'),
+                  ),
+                  const SizedBox(height: 24),
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: ElevatedButton(
+                      onPressed: () => _animateAndAddToCart(cartProvider),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Add to Cart'),
+                    ),
                   ),
                 ],
               ),
