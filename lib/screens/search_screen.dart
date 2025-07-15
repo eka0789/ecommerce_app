@@ -71,6 +71,50 @@ class _SearchScreenState extends State<SearchScreen> {
               productProvider.toggleHighRatingFilter(!productProvider.filterHighRating);
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Filter by Price Range'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        title: const Text('All Prices'),
+                        onTap: () {
+                          productProvider.setPriceRangeFilter(null);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('\$0 - \$50'),
+                        onTap: () {
+                          productProvider.setPriceRangeFilter('0-50');
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('\$50 - \$100'),
+                        onTap: () {
+                          productProvider.setPriceRangeFilter('50-100');
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        title: const Text('\$100+'),
+                        onTap: () {
+                          productProvider.setPriceRangeFilter('100+');
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: filteredProducts.isEmpty && _query.isNotEmpty

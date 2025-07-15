@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
+import '../models/review.dart';
 import '../providers/cart_provider.dart';
 import '../providers/wishlist_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/product_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -16,6 +19,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  final _reviewController = TextEditingController();
 
   @override
   void initState() {
@@ -32,6 +36,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   @override
   void dispose() {
     _controller.dispose();
+    _reviewController.dispose();
     super.dispose();
   }
 
@@ -66,6 +71,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
   Widget build(BuildContext context) {
     final wishlistProvider = Provider.of<WishlistProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final productProvider = Provider.of<ProductProvider>(context);
+    final reviews = productProvider.getReviews(widget.product.id);
 
     return Scaffold(
       appBar: AppBar(
@@ -158,26 +166,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> with SingleTi
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Based on ${widget.product.reviewCount} reviews',
+                            'Based on ${reviews.length} reviews',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           const SizedBox(height: 8),
-                          ListView(
+                          if (reviews.isEmpty)
+                            const Text('No reviews yet.'),
+                          ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            children: const [
-                              ListTile(
-                                title: Text('Great product!'),
-                                subtitle: Text('Really satisfied with the quality.'),
-                                leading: Icon(Icons.person),
-                              ),
-                              ListTile(
-                                title: Text('Highly recommend'),
-                                subtitle: Text('Worth the price.'),
-                                leading: Icon(Icons.person),
-                              ),
-                            ],
+                            itemCount: reviews.length,
+                            itemBuilder: (context, index) {
+                              final review = reviews[index];
+                              return ListTile(
+                                title: Text(review.userName),
+                                subtitle: Text('${review.comment}\n${review.timestamp.toString().substring(0, 10)}'),
+                                leading: const Icon(Icons.person),
+                              );
+                            },
                           ),
+                          const SizedBox(height: 16),
+                          if (authProvider.isAuthenticated)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextField(
+                                  controller: _reviewController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Add a review',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    if (_reviewController.text.isNotEmpty) {
+                                      productProvider.addReview(
+                                        Review(
+                                          productId: widget.product.id,
+                                          userName: authProvider.userName ?? 'User',
+                                          comment: _reviewController.text,
+                                          timestamp: DateTime.now(),
+                                        ),
+                                      );
+                                      _reviewController.clear();
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(double.infinity, 50),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text('Submit Review'),
+                                ),
+                              ],
+                            )
+                          else
+                            const Text('Please log in to add a review.'),
                         ],
                       ),
                     ),

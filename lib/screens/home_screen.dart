@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/wishlist_provider.dart';
+import '../providers/auth_provider.dart';
 import '../screens/cart_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/wishlist_screen.dart';
+import '../screens/login_screen.dart';
 import '../widgets/product_card.dart';
 import '../widgets/category_filter.dart';
 
@@ -17,6 +19,7 @@ class HomeScreen extends StatelessWidget {
     final productProvider = Provider.of<ProductProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
     final wishlistProvider = Provider.of<WishlistProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (productProvider.products.isEmpty && !productProvider.isLoading) {
@@ -27,7 +30,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Elegant Store'),
+        title: Text('Elegant Store${authProvider.userName != null ? ' - ${authProvider.userName}' : ''}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -90,6 +93,16 @@ class HomeScreen extends StatelessWidget {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await authProvider.logout();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+          ),
         ],
       ),
       body: Column(
@@ -124,13 +137,55 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     IconButton(
                       icon: Icon(
-                        productProvider.filterHighRating
-                            ? Icons.star
-                            : Icons.star_border,
+                        productProvider.filterHighRating ? Icons.star : Icons.star_border,
                         color: productProvider.filterHighRating ? Colors.amber : null,
                       ),
                       onPressed: () {
                         productProvider.toggleHighRatingFilter(!productProvider.filterHighRating);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.filter_list),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Filter by Price Range'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  title: const Text('All Prices'),
+                                  onTap: () {
+                                    productProvider.setPriceRangeFilter(null);
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                                ListTile(
+                                  title: const Text('\$0 - \$50'),
+                                  onTap: () {
+                                    productProvider.setPriceRangeFilter('0-50');
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                                ListTile(
+                                  title: const Text('\$50 - \$100'),
+                                  onTap: () {
+                                    productProvider.setPriceRangeFilter('50-100');
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                                ListTile(
+                                  title: const Text('\$100+'),
+                                  onTap: () {
+                                    productProvider.setPriceRangeFilter('100+');
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ],
